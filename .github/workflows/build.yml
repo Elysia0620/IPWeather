@@ -7,17 +7,36 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Build with Buildozer Action
-      uses: ArtemShedko/buildozer-action@v1.2.0
+    - name: Set up Python
+      uses: actions/setup-python@v5
       with:
-        workdir: .
-        buildozer_version: master
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential libssl-dev libffi-dev python3-dev zip unzip openjdk-17-jdk
+        python -m pip install --upgrade pip
+        pip install "buildozer<2.0.0" "cython<3.0.0"
+
+    - name: Build APK with Buildozer
+      env:
+        APP_ANDROID_ACCEPT_SDK_LICENSES: 1
+      run: |
+        # 预先注入 SDK 许可，防止询问弹窗
+        mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
+        echo "24333f8a637bba39ea837d2d9c3f00501726a457" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+        echo "89330172877f40182f1ae10000612653d7f210ce" >> ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+        echo "e67567e8a421ce802340790d258693e992ae217e" >> ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+
+        # 直接读取仓库根目录下的 buildozer.spec 进行编译（不执行 init，防止重复报错）
+        buildozer -v android debug
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
