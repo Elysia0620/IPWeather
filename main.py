@@ -23,8 +23,7 @@ def resource_path(relative_path):
   return os.path.join(os.path.abspath("."), relative_path)
 
 
-# 注册系统微软雅黑字体（解决 Windows 中文乱码问题）
-LabelBase.register(name="Roboto", fn_regular="C:/Windows/Fonts/msyh.ttc")
+LabelBase.register(name="Roboto", fn_regular="msyh.ttc")
 
 
 class WeatherApp(App):
