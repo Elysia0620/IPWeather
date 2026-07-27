@@ -27,22 +27,21 @@ jobs:
 
     - name: Build APK with Buildozer
       env:
-        # 自动同意 SDK 许可的关键环境变量
         APP_ANDROID_ACCEPT_SDK_LICENSES: 1
       run: |
-        # 1. 初始化配置文件
+        # 1. 初始化配置
         buildozer init
 
-        # 2. 修改应用基本配置
+        # 2. 修改配置：标题、依赖、权限
         sed -i 's/title = My Application/title = IP天气追踪器/g' buildozer.spec
         sed -i 's/requirements = python3,kivy/requirements = python3,kivy,requests,urllib3,chardet,idna,certifi/g' buildozer.spec
         sed -i 's/# android.permissions = INTERNET/android.permissions = INTERNET/g' buildozer.spec
 
-        # 3. 指定兼容性最好的 Android NDK 版本，避免下载 r28 导致不兼容
-        sed -i 's/# android.ndk = 25b/android.ndk = 25b/g' buildozer.spec
+        # 3. 锁定单架构编译 (arm64-v8a)，大幅提升速度并防止管道中断
+        sed -i 's/android.archs = arm64-v8a, armeabi-v7a/android.archs = arm64-v8a/g' buildozer.spec
 
-        # 4. 执行打包（加入 yes 管道流，双重保障自动接受所有 license 弹窗）
-        yes | buildozer -v android debug
+        # 4. 直接执行打包（不带 yes 管道）
+        buildozer -v android debug
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
