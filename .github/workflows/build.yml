@@ -26,26 +26,28 @@ jobs:
         pip install "buildozer<2.0.0" "cython<3.0.0"
 
     - name: Build APK with Buildozer
-      env:
-        APP_ANDROID_ACCEPT_SDK_LICENSES: 1
       run: |
-        # 1. 初始化配置
+        # 1. 初始化 buildozer 配置
         buildozer init
 
-        # 2. 修改应用基本属性
+        # 2. 修改基本配置 (应用名、依赖库、网络权限)
         sed -i 's/title = My Application/title = IP天气追踪器/g' buildozer.spec
         sed -i 's/requirements = python3,kivy/requirements = python3,kivy,requests,urllib3,chardet,idna,certifi/g' buildozer.spec
         sed -i 's/# android.permissions = INTERNET/android.permissions = INTERNET/g' buildozer.spec
 
-        # 3. 锁定单架构编译 (arm64-v8a)
+        # 3. 单架构编译 (仅编译 64位 arm64-v8a，提速并减少报错)
         sed -i 's/android.archs = arm64-v8a, armeabi-v7a/android.archs = arm64-v8a/g' buildozer.spec
 
-        # 4. 【关键步骤】锁定 SDK / Build-Tools 稳定版本，防止下载 Build-Tools 37
-        sed -i 's/# android.api = 31/android.api = 33/g' buildozer.spec
-        sed -i 's/# android.build_tools_version = 30.0.3/android.build_tools_version = 30.0.3/g' buildozer.spec
-        sed -i 's/# android.ndk = 25b/android.ndk = 25b/g' buildozer.spec
+        # 4. 【核心解决】开启 buildozer.spec 内部的自动接受 License 开关
+        sed -i 's/# android.accept_sdk_license = False/android.accept_sdk_license = True/g' buildozer.spec
 
-        # 5. 执行打包
+        # 5. 【核心解决】预先生成 android-sdk-license 许可文件，防止弹窗阻塞
+        mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
+        echo "24333f8a637bba39ea837d2d9c3f00501726a457" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+        echo "89330172877f40182f1ae10000612653d7f210ce" >> ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+        echo "e67567e8a421ce802340790d258693e992ae217e" >> ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+
+        # 6. 开始打包
         buildozer -v android debug
 
     - name: Upload APK
