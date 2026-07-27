@@ -1,0 +1,51 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential libssl-dev libffi-dev python3-dev zip unzip openjdk-17-jdk
+        pip install --upgrade pip
+        pip install "buildozer<2.0.0" "cython<3.0.0"
+
+    - name: Build with Buildozer
+      run: |
+        # 1. 创建配置文件
+        buildozer init
+        
+        # 2. 修改应用中文名称
+        sed -i 's/title = My Application/title = IP天气追踪器/g' buildozer.spec
+        
+        # 3. 添加必要 Python 库依赖
+        sed -i 's/requirements = python3,kivy/requirements = python3,kivy,requests,urllib3,chardet,idna,certifi/g' buildozer.spec
+        
+        # 4. 开启网络权限
+        sed -i 's/# android.permissions = INTERNET/android.permissions = INTERNET/g' buildozer.spec
+        
+        # 5. 打包包含图片资源
+        sed -i 's/source.include_exts = py,png,jpg,kv,atlas/source.include_exts = py,png,jpg,kv,atlas/g' buildozer.spec
+        
+        # 6. 执行打包
+        buildozer -v android debug
+
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: IPWeather-Android-APK
+        path: bin/*.apk
