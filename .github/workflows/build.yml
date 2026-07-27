@@ -16,34 +16,62 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # 2. 设置 Python 环境 (使用 Python 3.10)
+    # 2. 设置 Python 环境
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.10'
 
-    # 3. 设置 Java 17 (匹配新版 Android SDK)
+    # 3. 设置 Java 17 (匹配 Gradle)
     - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: '17'
 
-    # 4. 安装系统依赖 (已修正 libsdl2-mixer-dev 拼写)
-    - name: Install dependencies
+    # 4. 一次性补全所有 Linux 底层编译依赖包
+    - name: Install System Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential libffi-dev libssl-dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev autoconf automake libtool ccache
-        pip install --upgrade pip setuptools wheel
-        pip install buildozer cython
+        sudo apt-get install -y \
+          build-essential \
+          git \
+          ffmpeg \
+          libsdl2-dev \
+          libsdl2-image-dev \
+          libsdl2-mixer-dev \
+          libsdl2-ttf-dev \
+          libportmidi-dev \
+          libswscale-dev \
+          libavformat-dev \
+          libavcodec-dev \
+          zlib1g-dev \
+          autoconf \
+          automake \
+          libtool \
+          pkg-config \
+          cmake \
+          zip \
+          unzip \
+          libssl-dev \
+          libffi-dev \
+          libsqlite3-dev \
+          patch \
+          lld
 
-    # 5. 使用 Buildozer 打包 APK
-    - name: Build with Buildozer
+    # 5. 安装 Python 构建工具（强制锁定 Cython < 3.0.0 避免编译死锁）
+    - name: Install Python Build Tools
       run: |
-        buildozer -s android debug
+        pip install --upgrade pip setuptools wheel
+        pip install "cython<3.0.0" "buildozer>=1.5.0"
 
-    # 6. 上传生成的 APK 文件到 Artifacts
-    - name: Upload APK
+    # 6. 执行 Buildozer 打包（用 yes 自动通过所有 SDK/NDK 交互式许可）
+    - name: Build APK with Buildozer
+      run: |
+        yes | buildozer -s android debug
+
+    # 7. 上传生成的 APK 文件
+    - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: IPWeather-debug-apk
