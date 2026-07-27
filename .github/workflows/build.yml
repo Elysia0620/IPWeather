@@ -32,15 +32,20 @@ jobs:
         # 1. 初始化配置
         buildozer init
 
-        # 2. 修改配置：标题、依赖、权限
+        # 2. 修改应用基本属性
         sed -i 's/title = My Application/title = IP天气追踪器/g' buildozer.spec
         sed -i 's/requirements = python3,kivy/requirements = python3,kivy,requests,urllib3,chardet,idna,certifi/g' buildozer.spec
         sed -i 's/# android.permissions = INTERNET/android.permissions = INTERNET/g' buildozer.spec
 
-        # 3. 锁定单架构编译 (arm64-v8a)，大幅提升速度并防止管道中断
+        # 3. 锁定单架构编译 (arm64-v8a)
         sed -i 's/android.archs = arm64-v8a, armeabi-v7a/android.archs = arm64-v8a/g' buildozer.spec
 
-        # 4. 直接执行打包（不带 yes 管道）
+        # 4. 【关键步骤】锁定 SDK / Build-Tools 稳定版本，防止下载 Build-Tools 37
+        sed -i 's/# android.api = 31/android.api = 33/g' buildozer.spec
+        sed -i 's/# android.build_tools_version = 30.0.3/android.build_tools_version = 30.0.3/g' buildozer.spec
+        sed -i 's/# android.ndk = 25b/android.ndk = 25b/g' buildozer.spec
+
+        # 5. 执行打包
         buildozer -v android debug
 
     - name: Upload APK
