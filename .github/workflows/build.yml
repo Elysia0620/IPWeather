@@ -27,10 +27,19 @@ jobs:
 
     - name: Build APK with Buildozer
       run: |
+        # 1. 初始化 buildozer.spec
         buildozer init
+
+        # 2. 修改应用配置
         sed -i 's/title = My Application/title = IP天气追踪器/g' buildozer.spec
         sed -i 's/requirements = python3,kivy/requirements = python3,kivy,requests,urllib3,chardet,idna,certifi/g' buildozer.spec
         sed -i 's/# android.permissions = INTERNET/android.permissions = INTERNET/g' buildozer.spec
+
+        # 3. 预先接受所有 Android SDK License（关键解决步骤！）
+        mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
+        yes | sdkmanager --sdk_root=$HOME/.buildozer/android/platform/android-sdk --licenses || true
+
+        # 4. 执行编译
         buildozer -v android debug
 
     - name: Upload APK
